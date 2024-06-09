@@ -9,16 +9,18 @@ import (
 
 func main() {
 	var (
-		url       string
-		dev       string
-		cache     string
-		cacheSize int64
-		logLevel  string
+		url          string
+		dev          string
+		cache        string
+		cacheSize    int64
+		logLevel     string
+		cacheMetrics bool
 	)
 	flag.StringVar(&dev, "device", "/dev/nbd0", "nbd device")
 	flag.StringVar(&cache, "cache", "", "cache file")
 	flag.Int64Var(&cacheSize, "cache-size", 1<<30, "cache size")
 	flag.StringVar(&logLevel, "log-level", "info", "log level")
+	flag.BoolVar(&cacheMetrics, "cache-metrics", false, "cache metrics")
 	flag.Parse()
 	url = flag.Arg(0)
 
@@ -30,10 +32,11 @@ func main() {
 	logrus.SetLevel(level)
 
 	s := rdnbd.New(rdnbd.Config{
-		URL:       url,
-		Device:    dev,
-		Cache:     cache,
-		CacheSize: cacheSize,
+		URL:             url,
+		Device:          dev,
+		Cache:           cache,
+		CacheSize:       cacheSize,
+		LogCacheMetrics: cacheMetrics,
 	})
 	if err := s.Run(); err != nil {
 		logrus.Fatal(err)

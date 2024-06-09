@@ -1,9 +1,11 @@
 package rdnbd
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/pojntfx/go-nbd/pkg/backend"
 	"github.com/pojntfx/go-nbd/pkg/client"
@@ -18,10 +20,11 @@ type Server struct {
 }
 
 type Config struct {
-	URL       string
-	Device    string
-	Cache     string
-	CacheSize int64
+	URL             string
+	Device          string
+	Cache           string
+	CacheSize       int64
+	LogCacheMetrics bool
 }
 
 func New(cfg Config) *Server {
@@ -54,6 +57,33 @@ func (s *Server) Run() (err error) {
 		rangeUnit: "bytes",
 		client:    &http.Client{},
 		log:       logrus.WithField("module", "http-backend"),
+	}
+	if s.cfg.Cache != "" {
+		cache := &cacheBackend{
+			b:         s.b,
+			cache:     s.cfg.Cache,
+			blockSize: 512,
+			log:       logrus.WithField("module", "cache"),
+		}
+		if err := cache.init(); err != nil {
+			logrus.Error(err)
+			return err
+		}
+		s.b = cache
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		if s.cfg.LogCacheMetrics {
+			go func() {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(5 * time.Second):
+						cache.metrics.ShowMetrics(cache.log)
+					}
+				}
+			}()
+		}
 	}
 
 	eg := errgroup.Group{}
