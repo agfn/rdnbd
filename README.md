@@ -6,7 +6,8 @@
 ```bash
 $ go install github.com/agfn/rdnbd/cmd/rdnbd@latest
 $ sudo rdnbd -device /dev/nbd0 -cache .cache https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.5.0-amd64-netinst.iso
-$ sudo mkdir -p /mnt/debian && sudo mount /dev/nbd0 /mnt/debian
+$ lsblk /dev/nbd0
+$ sudo mkdir -p /mnt/debian && sudo mount -o ro /dev/nbd0p1 /mnt/debian
 ```
 
 **rdnbd** relies on the [Network Block Device](https://docs.kernel.org/admin-guide/blockdev/nbd.html). Ensure you have NBD installed:
