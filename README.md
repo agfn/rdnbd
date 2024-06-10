@@ -20,6 +20,26 @@ brw-rw---- 1 root 6 43,   0 Jun 10 17:03 /dev/nbd0
 
 If NBD is not installed, refer to the *Install NBD* section
 
+## How it Works
+
+**Prerequisites**
+
+- The HTTP server must support [range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests), enabling partial file downloads.
+- Running on Linux with the NBD driver.
+
+The concept is straightforward: emulate a block device to mount it.
+
+NBD (Network Block Device) is designed for this purpose. It requires a server to provide block data and a kernel driver to map block data to a block device `/dev/nbdx`.
+
+With the help of [go-nbd](https://github.com/pojntfx/go-nbd), I quickly built the NBD server. However, it was extremely slow due to network latency when mounting, so I implemented an on-disk cache to reduce download frequency.
+
+The cache consists of two files:
+- `cache`: stores cached block data.
+- `cache.idx`: stores the cached block index.
+
+When reading a block, it checks whether the block is cached by accessing `idx = cache.idx[block_id]`.
+If `idx > 0`, the block has been cached and can be read from `cache[(block_id - 1)]`. If the block is not cached, it downloads the block using HTTP range request.
+
 ## Install NBD
 
 ### Install NBD for WSL
